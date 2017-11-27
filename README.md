@@ -14,8 +14,11 @@ This is LAB 03-a StarterKit. This project defines a 2D Collision StarterKit
 * Clone repository
 * Ensure `SFML_SDK` environment variable exits
 * Select a project default target `x64` when running executable
-* If the project builds but does not `xcopy` the required dll's try moving your project to a directory you have full access to, see http://tinyurl.com/SFMLStarter for a guide on post build events.
-* Alternatively set the Environment Variable in Configuration Properties | Debugging | Environment to `PATH=%PATH%;%SFML_SDK%\bin` this will ensure DLL's are discoverable when running in debug mode with copying the DLL's to the executable directory
+* If the project builds but does not `xcopy` the required dll's try moving your project to a 
+* directory you have full access to, see http://tinyurl.com/SFMLStarter for a guide on post build events.
+* Alternatively set the Environment Variable in Configuration Properties | Debugging | Environment to 
+* `PATH=%PATH%;%SFML_SDK%\bin` this will ensure DLL's are discoverable when running in debug mode with copying 
+* the DLL's to the executable directory
 * Useful resource on Conditional (ternary) operator http://www.cplusplus.com/forum/articles/14631/
 
 ### Cloning Repository ###

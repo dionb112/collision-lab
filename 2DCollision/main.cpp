@@ -1,3 +1,10 @@
+/// <summary>
+/// Collision experiments
+/// @author Dion Buckley
+/// @date Nov 2017
+/// </summary>
+/// <returns></returns>
+
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #define TINYC2_IMPL
@@ -7,10 +14,22 @@
 #include <Input.h>
 #include <Debug.h>
 
+enum class CurrentMouseShape {
+	START,
+	AABB,
+	CIRCLE,
+	RAY
+} currentMouse;
+
 using namespace std;
+
+sf::Texture setMouseTexture(sf::Texture);
 
 int main()
 {
+	// Default mouse ( No shape yet )
+	currentMouse = CurrentMouseShape::START;
+
 	// Create the main window
 	sf::RenderWindow window(sf::VideoMode(800, 600), "SFML window");
 
@@ -21,21 +40,25 @@ int main()
 		return EXIT_FAILURE;
 	}
 
-	// Load a mouse texture to display
-	sf::Texture mouse_texture;
-	if (!mouse_texture.loadFromFile("assets\\mouse.png")) {
-		DEBUG_MSG("Failed to load file");
+	// Declare a mouse texture to load later
+	sf::Texture mouseTexture;
+	if (!mouseTexture.loadFromFile("assets\\pointer_mouse.png")) {
+		DEBUG_MSG("Failed to default mouse texture");
 		return EXIT_FAILURE;
 	}
-
 	// Setup a mouse Sprite
 	sf::Sprite mouse;
-	mouse.setTexture(mouse_texture);
+	mouse.setTexture(mouseTexture);
 
 	//Setup mouse AABB
 	c2AABB aabb_mouse;
 	aabb_mouse.min = c2V(mouse.getPosition().x, mouse.getPosition().y);
 	aabb_mouse.max = c2V(mouse.getGlobalBounds().width, mouse.getGlobalBounds().width);
+
+	//Setup mouse Circle
+	c2Circle circleMouse;
+	circleMouse.p.x = mouse.getPosition().x;
+	circleMouse.p.y = mouse.getPosition().y;
 
 	// Setup Players Default Animated Sprite
 	AnimatedSprite animated_sprite(sprite_sheet);
@@ -66,9 +89,18 @@ int main()
 		// Move Sprite Follow Mouse
 		mouse.setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
 
-		// Update mouse AABB
-		aabb_mouse.min = c2V(mouse.getPosition().x, mouse.getPosition().y);
-		aabb_mouse.max = c2V(mouse.getGlobalBounds().width, mouse.getGlobalBounds().width);
+		if (currentMouse == CurrentMouseShape::AABB)
+		{
+			// Update mouse AABB
+			aabb_mouse.min = c2V(mouse.getPosition().x, mouse.getPosition().y);
+			aabb_mouse.max = c2V(mouse.getGlobalBounds().width, mouse.getGlobalBounds().width);
+		}
+		else if (currentMouse == CurrentMouseShape::CIRCLE)
+		{
+			circleMouse.p.x = mouse.getPosition().x;
+			circleMouse.p.y = mouse.getPosition().y;
+		}
+		
 
 		// Process events
 		sf::Event event;
@@ -93,12 +125,29 @@ int main()
 				{
 					input.setCurrent(Input::Action::UP);
 				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::F1))
+				{
+					currentMouse = CurrentMouseShape::AABB;
+					mouseTexture = setMouseTexture(mouseTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::F2))
+				{
+					currentMouse == CurrentMouseShape::CIRCLE;
+					mouseTexture = setMouseTexture(mouseTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::F3))
+				{
+					currentMouse == CurrentMouseShape::RAY;
+					mouseTexture = setMouseTexture(mouseTexture);
+				}
 				break;
 			default:
 				input.setCurrent(Input::Action::IDLE);
 				break;
 			}
 		}
+		//set mouse texture 
+		mouse.setTexture(mouseTexture);
 
 		// Handle input to Player
 		player.handleInput(input);
@@ -129,3 +178,28 @@ int main()
 
 	return EXIT_SUCCESS;
 };
+
+/// <summary>
+/// Function to set mouse texture to new shape for collision experiments
+/// Tried passing mouseTexture as reference but had trouble initialising 
+/// it as a reference above in main, so this way seemed legit
+/// </summary>
+/// <param name="t_mouseTexture">texture to be applied to mouse sprite</param>
+/// <returns>same but changed</returns>
+sf::Texture setMouseTexture(sf::Texture t_mouseTexture)
+{
+	// Load appropriate mouse texture to display
+	if (currentMouse == CurrentMouseShape::AABB)
+	{
+		if (!t_mouseTexture.loadFromFile("assets\\AABB_mouse.png")) {
+			cout << "Failed to load AABB mouse texture";
+		}
+	}
+	else if (currentMouse == CurrentMouseShape::CIRCLE)
+	{
+		if (!t_mouseTexture.loadFromFile("assets\\circle_mouse.png")) {
+			cout << "Failed to load circle mouse texture";
+		}
+	}
+	return t_mouseTexture;
+}
