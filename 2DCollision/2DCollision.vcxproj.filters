@@ -66,9 +66,6 @@
     <ClInclude Include="Input.h">
       <Filter>Header Files\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Player.h">
-      <Filter>Header Files\GameObject</Filter>
-    </ClInclude>
     <ClInclude Include="Animation.h">
       <Filter>Header Files\FSM</Filter>
     </ClInclude>
@@ -77,6 +74,15 @@
     </ClInclude>
     <ClInclude Include="tinyc2.h">
       <Filter>Header Files\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>Header Files\GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>Header Files\GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="NPC.h">
+      <Filter>Header Files\GameObject</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -102,6 +108,12 @@
       <Filter>Source Files\FSM</Filter>
     </ClCompile>
     <ClCompile Include="Player.cpp">
+      <Filter>Source Files\GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>Source Files\GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="NPC.cpp">
       <Filter>Source Files\GameObject</Filter>
     </ClCompile>
   </ItemGroup>

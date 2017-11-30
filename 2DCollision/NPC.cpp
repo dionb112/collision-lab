@@ -1,32 +1,32 @@
 #include <iostream>
-#include <Player.h>
+#include <NPC.h>
 #include <Idle.h>
 #include <Debug.h>
 
-Player::Player() : GameObject()
+NPC::NPC() : GameObject()
 {
 	m_animation.setCurrent(new Idle());
 	m_animation.setPrevious(new Idle());
 }
 
-Player::Player(const AnimatedSprite& s) : GameObject(s)
+NPC::NPC(const AnimatedSprite& s) : GameObject(s)
 {
 	m_animation.setCurrent(new Idle());
 	m_animation.setPrevious(new Idle());
 }
 
-Player::~Player()
+NPC::~NPC()
 {
 }
 
-AnimatedSprite& Player::getAnimatedSprite()
+AnimatedSprite& NPC::getAnimatedSprite()
 {
 	int frame = m_animated_sprite.getCurrentFrame();
 	m_animated_sprite.setTextureRect(m_animated_sprite.getFrame(frame));
 	return m_animated_sprite;
 }
 
-void Player::handleInput(Input in)
+void NPC::handleInput(Input in)
 {
 	DEBUG_MSG("Handle Input");
 
@@ -53,7 +53,7 @@ void Player::handleInput(Input in)
 	}
 }
 
-void Player::update()
+void NPC::update()
 {
 	//std::cout << "Handle Update" << std::endl;
 	m_animated_sprite.update();

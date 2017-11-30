@@ -1,21 +1,21 @@
-#ifndef PLAYER_H
-#define PLAYER_H
+#ifndef NPC_H
+#define NPC_H
 
 #include <GameObject.h>
 #include <Input.h>
 #include <Animation.h>
 #include <AnimatedSprite.h>
 
-class Player : public GameObject
+class NPC : public GameObject
 {
 
 public:
-	Player();
-	~Player();
-	Player(const AnimatedSprite&);
+	NPC();
+	~NPC();
+	NPC(const AnimatedSprite&);
 	AnimatedSprite& getAnimatedSprite();
 	void handleInput(Input);
 	void update();
 };
 
-#endif // !PLAYER_H
+#endif // !NPC_H
