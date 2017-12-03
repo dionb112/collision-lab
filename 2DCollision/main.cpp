@@ -4,13 +4,8 @@
 /// @date Nov 2017
 /// 
 /// TODO:	
-///		AABB to Cap
-///		AABB to Poly
 ///		AABB to Ray
-///		Circle to AABB
-///		Circle to Circle
 ///		Circle to Ray
-///		Circle to Cap
 ///		Circle to Poly
 ///		Ray to AABB
 ///		Ray to Cap
@@ -104,6 +99,7 @@ int main()
 
 	//Setup manifold for collisions
 	c2Manifold manifold;
+	manifold.count = 0;
 
 	// Setup a mouse Sprite
 	sf::Sprite mouseSprite;
@@ -111,13 +107,10 @@ int main()
 
 	// Setup Player AABB
 	c2AABB aabbPlayer;
-	aabbPlayer.min = c2V(mouseSprite.getPosition().x, mouseSprite.getPosition().y);
-	aabbPlayer.max = c2V(mouseSprite.getGlobalBounds().width, mouseSprite.getGlobalBounds().height);
 
 	// Setup Player Circle
 	c2Circle circlePlayer;
-	circlePlayer.p = c2V(200, 200);
-	circlePlayer.r = 20;
+	circlePlayer.r = 44;
 
 	// Setup player ray
 	c2Ray rayPlayer;
@@ -141,20 +134,42 @@ int main()
 
 	// Setup NPC Circle
 	c2Circle circleNPC;
-	circleNPC.p = c2V(420, 420);
-	circleNPC.r = 20;
+	circleNPC.p = c2V(400 + circlePlayer.r, 400 + circlePlayer.r);
+	circleNPC.r = 44;
 
 	// Setup NPC ray
 	c2Ray rayNPC;
-	rayNPC.p = c2V(400, 400);
+	rayNPC.p = c2V(400, 440);
 	rayNPC.d = c2Norm(c2V(2, 1));
-	rayNPC.t = 428;
+	rayNPC.t = rayNPC.p.x + mouseSprite.getGlobalBounds().width;
 
 	// Setup NPC capsule
 	c2Capsule capsuleNPC;
-	capsuleNPC.a = c2V(400, 400);
-	capsuleNPC.b = c2V(450, 450);
-	capsuleNPC.r = 20;
+	capsuleNPC.r = 16.5f; // as in asset
+	capsuleNPC.a = c2V(400 + capsuleNPC.r , 430 + capsuleNPC.r);
+	capsuleNPC.b = c2V(
+		capsuleNPC.a.x +
+		mouseSprite.getGlobalBounds().width - capsuleNPC.r * 2,
+		capsuleNPC.a.y
+	);
+
+	// Setup NPC Poly
+	c2Poly polyNPC;
+	polyNPC.count = 4;
+	polyNPC.verts[0] = c2V(400, 400);
+	polyNPC.verts[1] = c2V(
+		polyNPC.verts[0].x + 
+		mouseSprite.getGlobalBounds().width, 
+		polyNPC.verts[0].y);
+	polyNPC.verts[2] = c2V(
+		polyNPC.verts[1].x,
+		polyNPC.verts[1].y +
+		mouseSprite.getGlobalBounds().width);
+	polyNPC.verts[3] = c2V(
+		polyNPC.verts[0].x,
+		polyNPC.verts[2].y);
+	c2MakePoly(&polyNPC);
+
 
 	// Set defaultt enemy sprite pos
 	npcSprite.setPosition(aabbNPC.min.x, aabbNPC.min.y);
@@ -221,9 +236,10 @@ int main()
 		npcTexture = setNPCTexture(npcTexture);
 		npcSprite.setTexture(npcTexture);
 		
-		// Check for collisions and Update shapes and npc sprite
+		// Update shapes and Check for collisions
 		if (currentMouse == CurrentMouseShape::AABB)
 		{
+			// Update player aabb (as moving with mouse)
 			aabbPlayer.min = c2V(
 				mouseSprite.getPosition().x,
 				mouseSprite.getPosition().y
@@ -237,42 +253,39 @@ int main()
 
 			if (currentNPC == CurrentNPCShape::AABB)
 			{
-				npcSprite.setPosition(aabbNPC.min.x, aabbNPC.min.y);
-				
 				//AABB to AABB (as is default in Phil Starter)
 				result = c2AABBtoAABB(aabbPlayer, aabbNPC);
-				cout << ((result != 0) ? ("AABB to AABB Collision") : "") << endl;
-				if (result) {
-					mouseSprite.setColor(sf::Color(255, 0, 0, 255));
-				}
-				else {
-					mouseSprite.setColor(sf::Color(125, 255, 0, 255));
-				}
 			}
 			else if (currentNPC == CurrentNPCShape::RAY)
 			{
-				npcSprite.setPosition(rayNPC.p.x, rayNPC.p.y);
 				// AABB to Ray
+				// Raycast
+				c2Raycast cast;
+				int result = c2RaytoAABB(rayNPC, aabbPlayer, &cast);
 			}
 			else if (currentNPC == CurrentNPCShape::CAPSULE)
 			{
-				// TODO: Set sprite to capsule pos here
-
 				// AABB to Cap
+				 result = c2AABBtoCapsule(aabbPlayer, capsuleNPC);
 			}
 			else if (currentNPC == CurrentNPCShape::POLY)
 			{
-				// TODO: Set sprite to poly pos here
-
 				// AABB to Poly
-			}
+				result = c2AABBtoPoly(aabbPlayer, &polyNPC, NULL);
+			}			
 		}
-		// Circle Collisions
+		// Circle 
 		else if (currentMouse == CurrentMouseShape::CIRCLE)
 		{
+			// Update player circle (as moving with mouse)
+			circlePlayer.p = c2V(
+				mouseSprite.getPosition().x + circlePlayer.r,
+				mouseSprite.getPosition().y + circlePlayer.r
+			);
 			if (currentNPC == CurrentNPCShape::AABB)
 			{
 				// Circle to AABB
+				result = c2CircletoAABB(circlePlayer, aabbNPC);
 			}
 			else if (currentNPC == CurrentNPCShape::RAY)
 			{
@@ -281,14 +294,18 @@ int main()
 			else if (currentNPC == CurrentNPCShape::CAPSULE)
 			{
 				// Circle to Cap
+				result = c2CircletoCapsule(circlePlayer, capsuleNPC);
 			}
 			else if (currentNPC == CurrentNPCShape::POLY)
 			{
 				// Circle to Poly
+				result = c2CircletoPoly(circlePlayer, &polyNPC, NULL);
+
 			}
 			else if (currentNPC == CurrentNPCShape::CIRCLE)
 			{
 				// Circle to Circle
+				result = c2CircletoCircle(circlePlayer, circleNPC);
 			}
 		}
 		// Ray Collisions
@@ -310,6 +327,14 @@ int main()
 			{
 				// Circle to Circle
 			}
+		}
+		
+		cout << ((result != 0) ? ("Collision") : "") << endl;
+		if (result) {
+			mouseSprite.setColor(sf::Color(255, 0, 0, 255));
+		}
+		else {
+			mouseSprite.setColor(sf::Color(125, 255, 0, 255));
 		}
 
 		// Clear screen
