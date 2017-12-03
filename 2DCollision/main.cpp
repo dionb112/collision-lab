@@ -1,135 +1,170 @@
+/// <summary>
+/// Collision experiments
+/// @author Dion Buckley
+/// @date Nov 2017
+/// 
+/// TODO:	
+///		AABB to Cap
+///		AABB to Poly
+///		AABB to Ray
+///		Circle to AABB
+///		Circle to Circle
+///		Circle to Ray
+///		Circle to Cap
+///		Circle to Poly
+///		Ray to AABB
+///		Ray to Cap
+///		Ray to Circle
+///		Ray to Poly
+/// 
+/// I.E:
+///		1. Enable NPC to swap between AABB, Capsule, Poly, Ray, Circle.
+/// 
+///		2. Enable player to swap between AABB, Circle and Ray [DONE] 
+/// 
+/// From Phil:
+///		'setup each shape, boundary shape and check for collisions'
+/// </summary>
+/// <returns></returns>
+
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #define TINYC2_IMPL
 #include <tinyc2.h>
-#include <AnimatedSprite.h>
-#include <GameObject.h>
-#include <Player.h>
-#include <NPC.h>
-#include <Input.h>
-#include <Debug.h>
 
 using namespace std;
 
+enum class CurrentMouseShape {
+	DEFAULT,
+	AABB,
+	CIRCLE,
+	RAY
+} currentMouse;
+
+enum class CurrentNPCShape {
+	AABB,
+	CIRCLE,
+	RAY,
+	POLY,
+	CAPSULE
+} currentNPC;
+
+/// <summary>
+/// function to take in current mouse texture and update it based on currentMouseShape
+/// </summary>
+sf::Texture setMouseTexture(sf::Texture t_mouseTexture);
+
+/// <summary>
+/// function to take in current npc texture and update it based on currentNPCShape
+/// </summary>
+sf::Texture setNPCTexture(sf::Texture t_npcTexture);
+
 int main()
 {
-	// Create the main window
-	sf::RenderWindow window(sf::VideoMode(800, 600), "SFML window");
-
-	// Load a NPC's sprites to display
-	sf::Texture npc_texture;
-	if (!npc_texture.loadFromFile("assets\\grid.png")) {
-		DEBUG_MSG("Failed to load file");
-		return EXIT_FAILURE;
-	}
-
-	// Load a mouse texture to display
-	sf::Texture player_texture;
-	if (!player_texture.loadFromFile("assets\\player.png")) {
-		DEBUG_MSG("Failed to load file");
-		return EXIT_FAILURE;
-	}
-
-	// Setup NPC's Default Animated Sprite
-	AnimatedSprite npc_animated_sprite(npc_texture);
-	npc_animated_sprite.addFrame(sf::IntRect(3, 3, 84, 84));
-	npc_animated_sprite.addFrame(sf::IntRect(88, 3, 84, 84));
-	npc_animated_sprite.addFrame(sf::IntRect(173, 3, 84, 84));
-	npc_animated_sprite.addFrame(sf::IntRect(258, 3, 84, 84));
-	npc_animated_sprite.addFrame(sf::IntRect(343, 3, 84, 84));
-	npc_animated_sprite.addFrame(sf::IntRect(428, 3, 84, 84));
-
-	// Setup Players Default Animated Sprite
-	AnimatedSprite player_animated_sprite(player_texture);
-	player_animated_sprite.addFrame(sf::IntRect(3, 3, 84, 84));
-	player_animated_sprite.addFrame(sf::IntRect(88, 3, 84, 84));
-	player_animated_sprite.addFrame(sf::IntRect(173, 3, 84, 84));
-	player_animated_sprite.addFrame(sf::IntRect(258, 3, 84, 84));
-	player_animated_sprite.addFrame(sf::IntRect(343, 3, 84, 84));
-	player_animated_sprite.addFrame(sf::IntRect(428, 3, 84, 84));
-
-	// Setup the NPC
-	GameObject &npc = NPC(npc_animated_sprite);
-
-	// Setup the Player
-	GameObject &player = Player(player_animated_sprite);
-
-	//Setup NPC AABB
-	c2AABB aabb_npc;
-	aabb_npc.min = c2V(npc.getAnimatedSprite().getPosition().x, npc.getAnimatedSprite().getPosition().y);
-	aabb_npc.max = c2V(
-		npc.getAnimatedSprite().getPosition().x +
-		npc.getAnimatedSprite().getGlobalBounds().width, 
-		npc.getAnimatedSprite().getPosition().y +
-		npc.getAnimatedSprite().getGlobalBounds().height);
-
-	//Setup Player AABB
-	c2AABB aabb_player;
-	aabb_player.min = c2V(player.getAnimatedSprite().getPosition().x, player.getAnimatedSprite().getPosition().y);
-	aabb_player.max = c2V(player.getAnimatedSprite().getGlobalBounds().width / 6, player.getAnimatedSprite().getGlobalBounds().width / 6);
-
-
-	// Initialize Input
-	Input input;
-
 	// Collision result
 	int result = 0;
 
-	// Direction of movement of NPC
-	sf::Vector2f direction(0.1f, 0.2f);
-	
+	// Default player to pointer
+	currentMouse = CurrentMouseShape::DEFAULT;
+	currentNPC = CurrentNPCShape::AABB;
+
+	// Create the main window
+	sf::RenderWindow window(sf::VideoMode(800, 600), "Collision Lab");
+
+	// Setup instruction text
+	sf::Text text;
+	sf::Font font;
+	if (!font.loadFromFile("assets\\BAUHS93.ttf"))
+	{
+		std::cout << " Error with font loading";
+	}
+	text.setFont(font);
+	text.setPosition(sf::Vector2f{ 25,10 });
+	text.setCharacterSize(30);
+	text.Italic;
+	text.setFillColor(sf::Color::Magenta);
+	text.setString(
+		"Choose Player Shape using Function Keys \n : F1 for AABB \n , F2 for Circle \n , F3 for Ray. \nChoose NPC Shape using Letter Keys \n : A for AABB \n , C for Capsule \n , O for Circle \n , P for Poly \n , R for Ray."
+		);
+
+	// Load first texture to display on shape
+	sf::Texture npcTexture;
+	if (!npcTexture.loadFromFile("assets\\aabb.png")) 
+	{
+		cout << "Error loading shape grid" << endl;
+	}
+
+	// Default mouse pointer
+	sf::Texture mouseTexture;
+	if (!mouseTexture.loadFromFile("assets\\pointer_mouse.png"))
+		{
+			cout << "Error loading mouse pointer" << endl;
+
+		}
+
+	//Setup manifold for collisions
+	c2Manifold manifold;
+
+	// Setup a mouse Sprite
+	sf::Sprite mouseSprite;
+	mouseSprite.setTexture(mouseTexture);
+
+	// Setup Player AABB
+	c2AABB aabbPlayer;
+	aabbPlayer.min = c2V(mouseSprite.getPosition().x, mouseSprite.getPosition().y);
+	aabbPlayer.max = c2V(mouseSprite.getGlobalBounds().width, mouseSprite.getGlobalBounds().height);
+
+	// Setup Player Circle
+	c2Circle circlePlayer;
+	circlePlayer.p = c2V(200, 200);
+	circlePlayer.r = 20;
+
+	// Setup player ray
+	c2Ray rayPlayer;
+	rayPlayer.p = c2V(100, 100);
+	rayPlayer.d = c2Norm(c2V(2, 1));
+	rayPlayer.t = 128;
+
+	// Setup NPC Sprite
+	sf::Sprite npcSprite;
+	npcSprite.setTexture(npcTexture);
+
+	//Setup NPC AABB
+	c2AABB aabbNPC;
+	aabbNPC.min = c2V(400, 400);
+	aabbNPC.max = c2V(
+		aabbNPC.min.x +
+		mouseSprite.getGlobalBounds().width,
+		aabbNPC.min.y +
+		mouseSprite.getGlobalBounds().height
+	);
+
+	// Setup NPC Circle
+	c2Circle circleNPC;
+	circleNPC.p = c2V(420, 420);
+	circleNPC.r = 20;
+
+	// Setup NPC ray
+	c2Ray rayNPC;
+	rayNPC.p = c2V(400, 400);
+	rayNPC.d = c2Norm(c2V(2, 1));
+	rayNPC.t = 428;
+
+	// Setup NPC capsule
+	c2Capsule capsuleNPC;
+	capsuleNPC.a = c2V(400, 400);
+	capsuleNPC.b = c2V(450, 450);
+	capsuleNPC.r = 20;
+
+	// Set defaultt enemy sprite pos
+	npcSprite.setPosition(aabbNPC.min.x, aabbNPC.min.y);
+
 	// Start the game loop
 	while (window.isOpen())
 	{
 		// Move Sprite Follow Mouse
-		player.getAnimatedSprite().setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
-		
-		// Move The NPC
-		sf::Vector2f move_to(npc.getAnimatedSprite().getPosition().x + direction.x, npc.getAnimatedSprite().getPosition().y + direction.y);
+		mouseSprite.setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
 
-		if (move_to.x < 0) {
-			direction.x *= -1;
-			move_to.x = 0 + npc.getAnimatedSprite().getGlobalBounds().width;
-		}
-		else if (move_to.x + npc.getAnimatedSprite().getGlobalBounds().width >= 800) { 
-			direction.x *= -1;
-			move_to.x = 800 - npc.getAnimatedSprite().getGlobalBounds().width;
-		}
-		else if (move_to.y < 0) { 
-			direction.y *= -1;
-			move_to.y = 0 + npc.getAnimatedSprite().getGlobalBounds().height;
-		}
-		else if (move_to.y + npc.getAnimatedSprite().getGlobalBounds().height >= 600) {
-			direction.y *= -1;
-			move_to.y = 600 - npc.getAnimatedSprite().getGlobalBounds().height;
-		}
-		
-		npc.getAnimatedSprite().setPosition(move_to);
-
-		// Update NPC AABB set x and y
-		aabb_npc.min = c2V(
-			npc.getAnimatedSprite().getPosition().x, 
-			npc.getAnimatedSprite().getPosition().y
-		);
-
-		aabb_npc.max = c2V(
-			npc.getAnimatedSprite().getPosition().x +
-			npc.getAnimatedSprite().getGlobalBounds().width,
-			npc.getAnimatedSprite().getPosition().y +
-			npc.getAnimatedSprite().getGlobalBounds().height
-		);
-
-		// Update Player AABB
-		aabb_player.min = c2V(
-			player.getAnimatedSprite().getPosition().x, 
-			player.getAnimatedSprite().getPosition().y
-		);
-		aabb_player.max = c2V(
-			player.getAnimatedSprite().getPosition().x +
-			player.getAnimatedSprite().getGlobalBounds().width, 
-			player.getAnimatedSprite().getPosition().y + 
-			player.getAnimatedSprite().getGlobalBounds().height
-		);
 
 		// Process events
 		sf::Event event;
@@ -142,56 +177,229 @@ int main()
 				window.close();
 				break;
 			case sf::Event::KeyPressed:
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::F1))
 				{
-					input.setCurrent(Input::Action::LEFT);
+					currentMouse = CurrentMouseShape::AABB;
 				}
-				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::F2))
 				{
-					input.setCurrent(Input::Action::RIGHT);
+					currentMouse = CurrentMouseShape::CIRCLE;
 				}
-				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::F3))
 				{
-					input.setCurrent(Input::Action::UP);
+					currentMouse = CurrentMouseShape::RAY;
 				}
-				break;
-			default:
-				input.setCurrent(Input::Action::IDLE);
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::O))
+				{
+					currentNPC = CurrentNPCShape::CIRCLE;
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+				{
+					currentNPC = CurrentNPCShape::RAY;
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::P))
+				{
+					currentNPC = CurrentNPCShape::POLY;
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+				{
+					currentNPC = CurrentNPCShape::AABB;
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
+				{
+					currentNPC = CurrentNPCShape::CAPSULE;
+				}
 				break;
 			}
 		}
 
-		// Handle input to Player
-		player.handleInput(input);
+		// Update texture map for mouse sprite
+		mouseTexture = setMouseTexture(mouseTexture);
+		mouseSprite.setTexture(mouseTexture);
 
-		// Update the Player
-		player.update();
+		// Update texture map for NPC sprite
+		npcTexture = setNPCTexture(npcTexture);
+		npcSprite.setTexture(npcTexture);
+		
+		// Check for collisions and Update shapes and npc sprite
+		if (currentMouse == CurrentMouseShape::AABB)
+		{
+			aabbPlayer.min = c2V(
+				mouseSprite.getPosition().x,
+				mouseSprite.getPosition().y
+			);
+			aabbPlayer.max = c2V(
+				aabbPlayer.min.x +
+				mouseSprite.getGlobalBounds().width,
+				aabbPlayer.min.y +
+				mouseSprite.getGlobalBounds().height
+			);
 
-		// Update the Player
-		npc.update();
+			if (currentNPC == CurrentNPCShape::AABB)
+			{
+				npcSprite.setPosition(aabbNPC.min.x, aabbNPC.min.y);
+				
+				//AABB to AABB (as is default in Phil Starter)
+				result = c2AABBtoAABB(aabbPlayer, aabbNPC);
+				cout << ((result != 0) ? ("AABB to AABB Collision") : "") << endl;
+				if (result) {
+					mouseSprite.setColor(sf::Color(255, 0, 0, 255));
+				}
+				else {
+					mouseSprite.setColor(sf::Color(125, 255, 0, 255));
+				}
+			}
+			else if (currentNPC == CurrentNPCShape::RAY)
+			{
+				npcSprite.setPosition(rayNPC.p.x, rayNPC.p.y);
+				// AABB to Ray
+			}
+			else if (currentNPC == CurrentNPCShape::CAPSULE)
+			{
+				// TODO: Set sprite to capsule pos here
 
-		// Check for collisions
-		result = c2AABBtoAABB(aabb_player, aabb_npc);
-		cout << ((result != 0) ? ("Collision") : "") << endl;
-		if (result){
-			player.getAnimatedSprite().setColor(sf::Color(255,0,0));
+				// AABB to Cap
+			}
+			else if (currentNPC == CurrentNPCShape::POLY)
+			{
+				// TODO: Set sprite to poly pos here
+
+				// AABB to Poly
+			}
 		}
-		else {
-			player.getAnimatedSprite().setColor(sf::Color(0, 255, 0));
+		// Circle Collisions
+		else if (currentMouse == CurrentMouseShape::CIRCLE)
+		{
+			if (currentNPC == CurrentNPCShape::AABB)
+			{
+				// Circle to AABB
+			}
+			else if (currentNPC == CurrentNPCShape::RAY)
+			{
+				// Circle to Ray
+			}
+			else if (currentNPC == CurrentNPCShape::CAPSULE)
+			{
+				// Circle to Cap
+			}
+			else if (currentNPC == CurrentNPCShape::POLY)
+			{
+				// Circle to Poly
+			}
+			else if (currentNPC == CurrentNPCShape::CIRCLE)
+			{
+				// Circle to Circle
+			}
+		}
+		// Ray Collisions
+		else if (currentMouse == CurrentMouseShape::RAY)
+		{
+			if (currentNPC == CurrentNPCShape::AABB)
+			{
+				// Ray to AABB
+			}
+			else if (currentNPC == CurrentNPCShape::CAPSULE)
+			{
+				// Ray to Cap
+			}
+			else if (currentNPC == CurrentNPCShape::POLY)
+			{
+				// Ray to Poly
+			}
+			else if (currentNPC == CurrentNPCShape::CIRCLE)
+			{
+				// Circle to Circle
+			}
 		}
 
 		// Clear screen
-		window.clear();
+		window.clear(sf::Color::White);
 
-		// Draw the Players Current Animated Sprite
-		window.draw(player.getAnimatedSprite());
+		// Draw stuff
+		window.draw(text);
 
-		// Draw the NPC's Current Animated Sprite
-		window.draw(npc.getAnimatedSprite());
+		window.draw(npcSprite);
+
+		window.draw(mouseSprite);
 
 		// Update the window
 		window.display();
 	}
 
-	return EXIT_SUCCESS;
+	return 1;
 };
+
+
+/// <summary>
+/// Function to set mouse texture to new shape for collision experiments
+/// Tried passing mouseTexture as reference but had trouble initialising 
+/// it as a reference above in main, so this way seemed legit
+/// </summary>
+/// <param name="t_mouseTexture">texture to be applied to mouse sprite</param>
+/// <returns>same but changed</returns>
+sf::Texture setMouseTexture(sf::Texture t_mouseTexture)
+{
+	// Load appropriate mouse texture to display
+	if (currentMouse == CurrentMouseShape::AABB)
+	{
+		if (!t_mouseTexture.loadFromFile("assets\\aabb.png")) {
+			cout << "Failed to load AABB texture";
+		}
+	}
+	else if (currentMouse == CurrentMouseShape::CIRCLE)
+	{
+		if (!t_mouseTexture.loadFromFile("assets\\circle.png")) {
+			cout << "Failed to load circle texture";
+		}
+	}
+	else if (currentMouse == CurrentMouseShape::RAY)
+	{
+		if (!t_mouseTexture.loadFromFile("assets\\ray.png")) {
+			cout << "Failed to load ray texture";
+		}
+	}
+	else
+	{
+		if (!t_mouseTexture.loadFromFile("assets\\pointer_mouse.png"))
+		{
+			cout << "Error loading mouse pointer texture" << endl;
+		}
+	}
+	return t_mouseTexture;
+}
+
+sf::Texture setNPCTexture(sf::Texture t_npcTexture)
+{
+	// Load appropriate NPC texture to display
+	if (currentNPC == CurrentNPCShape::AABB)
+	{
+		if (!t_npcTexture.loadFromFile("assets\\aabb.png")) {
+			cout << "Failed to load AABB texture";
+		}
+	}
+	else if (currentNPC == CurrentNPCShape::CIRCLE)
+	{
+		if (!t_npcTexture.loadFromFile("assets\\circle.png")) {
+			cout << "Failed to load circle texture";
+		}
+	}
+	else if (currentNPC == CurrentNPCShape::RAY)
+	{
+		if (!t_npcTexture.loadFromFile("assets\\ray.png")) {
+			cout << "Failed to load ray texture";
+		}
+	}
+	else if (currentNPC == CurrentNPCShape::CAPSULE)
+	{
+		if (!t_npcTexture.loadFromFile("assets\\capsule.png")) {
+			cout << "Failed to load capsule texture";
+		}
+	}
+	else if (currentNPC == CurrentNPCShape::POLY)
+	{
+		if (!t_npcTexture.loadFromFile("assets\\poly.png")) {
+			cout << "Failed to load poly texture";
+		}
+	}
+	return t_npcTexture;
+}
