@@ -112,6 +112,10 @@ int main()
 
 	// Setup player ray
 	c2Ray rayPlayer;
+	rayPlayer.p = c2V(
+			mouseSprite.getPosition().x,
+			mouseSprite.getPosition().y + 40
+		);
 	rayPlayer.d = c2Norm(c2V(1, 0));
 	rayPlayer.t = 88;
 
@@ -322,9 +326,6 @@ int main()
 				mouseSprite.getPosition().x,
 				mouseSprite.getPosition().y + 40
 			);
-			rayPlayer.d.x = mouseSprite.getPosition().x - rayPlayer.p.x;
-			rayPlayer.d.y = mouseSprite.getPosition().y - rayPlayer.p.y;
-			rayPlayer.d = c2Norm(rayPlayer.d);
 			
 			if (currentNPC == CurrentNPCShape::AABB)
 			{
