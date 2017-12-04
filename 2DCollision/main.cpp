@@ -325,14 +325,7 @@ int main()
 				mouseSprite.getPosition().x,
 				mouseSprite.getPosition().y + 40
 			);
-
-			// Hmmm
-			/*rayPlayer.d = c2V(
-				mouseSprite.getPosition().x - rayPlayer.p.x,
-				mouseSprite.getPosition().y + 40 - rayPlayer.p.y
-			);
-			rayPlayer.d = c2Norm(rayPlayer.d);
-			*/
+			rayPlayer.d = c2Norm(c2V(1, 0));
 
 			if (currentNPC == CurrentNPCShape::AABB)
 			{
