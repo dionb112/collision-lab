@@ -4,18 +4,17 @@
 /// @date Nov 2017
 /// 
 /// TODO:	
-///		Circle to Ray
 ///		Ray to AABB
 ///		Ray to Cap
 ///		Ray to Circle
 ///		Ray to Poly
 /// 
-/// I.E:
+///
 ///		1. Enable NPC to swap between AABB, Capsule, Poly, Ray, Circle. [DONE]
-/// 
 ///		2. Enable player to swap between AABB, Circle and Ray [DONE] 
 /// 
 /// Known Bugs: Ray as player not at 100% 
+///				Circle to Ray same.
 ///				
 /// </summary>
 /// <returns></returns>
@@ -326,7 +325,15 @@ int main()
 				mouseSprite.getPosition().x,
 				mouseSprite.getPosition().y + 40
 			);
-			
+
+			// Hmmm
+			/*rayPlayer.d = c2V(
+				mouseSprite.getPosition().x - rayPlayer.p.x,
+				mouseSprite.getPosition().y + 40 - rayPlayer.p.y
+			);
+			rayPlayer.d = c2Norm(rayPlayer.d);
+			*/
+
 			if (currentNPC == CurrentNPCShape::AABB)
 			{
 				// Ray to AABB
@@ -339,7 +346,8 @@ int main()
 				// Ray to Cap
 				// Raycast
 				c2Raycast cast;
-				result = c2RaytoCapsule(rayPlayer, capsuleNPC, &cast);
+				result = c2CastRay(rayPlayer, &capsuleNPC, NULL, C2_CAPSULE, &cast);
+				// result = c2RaytoCapsule(rayPlayer, capsuleNPC, &cast);
 			}
 			else if (currentNPC == CurrentNPCShape::POLY)
 			{
