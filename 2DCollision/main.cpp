@@ -4,21 +4,19 @@
 /// @date Nov 2017
 /// 
 /// TODO:	
-///		AABB to Ray
 ///		Circle to Ray
-///		Circle to Poly
 ///		Ray to AABB
 ///		Ray to Cap
 ///		Ray to Circle
 ///		Ray to Poly
 /// 
 /// I.E:
-///		1. Enable NPC to swap between AABB, Capsule, Poly, Ray, Circle.
+///		1. Enable NPC to swap between AABB, Capsule, Poly, Ray, Circle. [DONE]
 /// 
 ///		2. Enable player to swap between AABB, Circle and Ray [DONE] 
 /// 
-/// From Phil:
-///		'setup each shape, boundary shape and check for collisions'
+/// Known Bugs: Ray as player not at 100% 
+///				
 /// </summary>
 /// <returns></returns>
 
@@ -114,9 +112,8 @@ int main()
 
 	// Setup player ray
 	c2Ray rayPlayer;
-	rayPlayer.p = c2V(100, 100);
-	rayPlayer.d = c2Norm(c2V(2, 1));
-	rayPlayer.t = 128;
+	rayPlayer.d = c2Norm(c2V(1, 0));
+	rayPlayer.t = 88;
 
 	// Setup NPC Sprite
 	sf::Sprite npcSprite;
@@ -140,8 +137,8 @@ int main()
 	// Setup NPC ray
 	c2Ray rayNPC;
 	rayNPC.p = c2V(400, 440);
-	rayNPC.d = c2Norm(c2V(2, 1));
-	rayNPC.t = rayNPC.p.x + mouseSprite.getGlobalBounds().width;
+	rayNPC.d = c2Norm(c2V(1, 0));
+	rayNPC.t = 88;
 
 	// Setup NPC capsule
 	c2Capsule capsuleNPC;
@@ -261,7 +258,7 @@ int main()
 				// AABB to Ray
 				// Raycast
 				c2Raycast cast;
-				int result = c2RaytoAABB(rayNPC, aabbPlayer, &cast);
+				result = c2RaytoAABB(rayNPC, aabbPlayer, &cast);
 			}
 			else if (currentNPC == CurrentNPCShape::CAPSULE)
 			{
@@ -272,7 +269,13 @@ int main()
 			{
 				// AABB to Poly
 				result = c2AABBtoPoly(aabbPlayer, &polyNPC, NULL);
-			}			
+			}	
+			else if (currentNPC == CurrentNPCShape::CIRCLE)
+			{
+				// AABB to Circle
+				result = c2CircletoAABB(circleNPC, aabbPlayer );
+			}
+
 		}
 		// Circle 
 		else if (currentMouse == CurrentMouseShape::CIRCLE)
@@ -290,6 +293,9 @@ int main()
 			else if (currentNPC == CurrentNPCShape::RAY)
 			{
 				// Circle to Ray
+				// Raycast
+				c2Raycast cast;
+				result = c2RaytoCircle(rayNPC, circlePlayer, &cast);
 			}
 			else if (currentNPC == CurrentNPCShape::CAPSULE)
 			{
@@ -311,21 +317,42 @@ int main()
 		// Ray Collisions
 		else if (currentMouse == CurrentMouseShape::RAY)
 		{
+			// Update player ray (as moving with mouse)
+			rayPlayer.p = c2V(
+				mouseSprite.getPosition().x,
+				mouseSprite.getPosition().y + 40
+			);
+			rayPlayer.d.x = mouseSprite.getPosition().x - rayPlayer.p.x;
+			rayPlayer.d.y = mouseSprite.getPosition().y - rayPlayer.p.y;
+			rayPlayer.d = c2Norm(rayPlayer.d);
+			
 			if (currentNPC == CurrentNPCShape::AABB)
 			{
 				// Ray to AABB
+				// Raycast
+				c2Raycast cast;
+				result = c2RaytoAABB(rayPlayer, aabbNPC, &cast);
 			}
 			else if (currentNPC == CurrentNPCShape::CAPSULE)
 			{
 				// Ray to Cap
+				// Raycast
+				c2Raycast cast;
+				result = c2RaytoCapsule(rayPlayer, capsuleNPC, &cast);
 			}
 			else if (currentNPC == CurrentNPCShape::POLY)
 			{
 				// Ray to Poly
+				// Raycast
+				c2Raycast cast;
+				result = c2RaytoPoly(rayPlayer, &polyNPC, NULL, &cast);
 			}
 			else if (currentNPC == CurrentNPCShape::CIRCLE)
 			{
-				// Circle to Circle
+				// Ray to Circle
+				// Raycast
+				c2Raycast cast;
+				result = c2RaytoCircle(rayPlayer, circleNPC, &cast);
 			}
 		}
 		
@@ -353,7 +380,6 @@ int main()
 
 	return 1;
 };
-
 
 /// <summary>
 /// Function to set mouse texture to new shape for collision experiments
